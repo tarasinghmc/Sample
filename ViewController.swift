@@ -1,80 +1,89 @@
 //
 //  ViewController.swift
-//  DonutChart
+//  SiriShortcutDemo
 //
-//  Created by Tara Singh M C on 03/07/19.
+//  Created by Tara Singh M C on 24/07/19.
 //  Copyright © 2019 Tara Singh. All rights reserved.
 //
 
 import UIKit
 
-class ViewController: UIViewController, PieChartDelegate {
-    @IBOutlet weak var chartView: PieChart!
-    fileprivate static let alpha: CGFloat = 0.5
-    let colors = [
-        UIColor.yellow.withAlphaComponent(alpha),
-        UIColor.green.withAlphaComponent(alpha),
-        UIColor.purple.withAlphaComponent(alpha),
-        UIColor.cyan.withAlphaComponent(alpha),
-        UIColor.darkGray.withAlphaComponent(alpha),
-        UIColor.red.withAlphaComponent(alpha),
-        UIColor.magenta.withAlphaComponent(alpha),
-        UIColor.orange.withAlphaComponent(alpha),
-        UIColor.brown.withAlphaComponent(alpha),
-        UIColor.lightGray.withAlphaComponent(alpha),
-        UIColor.gray.withAlphaComponent(alpha),
-        ]
-    fileprivate var currentColorIndex = 0
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        
-        chartView.layers = [createTextWithLinesLayer(), createTextWithLinesLayer()]
-        chartView.delegate = self
-        chartView.models = createModels() // order is important - models have to be set at the end
-    }
+struct SiriIntentContent {
+    var priorityAlerts = [AlertPriority]()
     
-    // MARK: - PieChartDelegate
-    
-    func onSelected(slice: PieSlice, selected: Bool) {
-        print("Selected: \(selected), slice: \(slice.data.model.name)")
-    }
-    
-    // MARK: - Models
-    
-    fileprivate func createModels() -> [PieSliceModel] {
-        
-        let models = [
-            PieSliceModel(value: 2, color: colors[0], name: "Apple"),
-            PieSliceModel(value: 3, color: colors[1], name: "Box"),
-            PieSliceModel(value: 20, color: colors[2], name: "Cat"),
-            PieSliceModel(value: 2, color: colors[3], name: "Dog"),
-            PieSliceModel(value: 3, color: colors[4], name: "Egg"),
-            PieSliceModel(value: 20, color: colors[5], name: "Fox")
-        ]
-        
-        currentColorIndex = models.count
-        return models
-    }
-    
-
-    fileprivate func createTextWithLinesLayer() -> PieLineTextLayer {
-        let lineTextLayer = PieLineTextLayer()
-        var lineTextLayerSettings = PieLineTextLayerSettings()
-        lineTextLayerSettings.lineColor = UIColor.lightGray
-        let formatter = NumberFormatter()
-        formatter.maximumFractionDigits = 1
-        lineTextLayerSettings.label.font = UIFont.systemFont(ofSize: 14)
-        lineTextLayerSettings.label.textGenerator = {slice in
-            let count = formatter.string(from: slice.data.model.value as NSNumber).map{"\($0)"} ?? ""
-            return slice.data.model.name + " : " + count
-        }
-        
-        lineTextLayer.settings = lineTextLayerSettings
-        return lineTextLayer
-    }
 }
 
+class ViewController: UIViewController {
+
+    @IBOutlet weak var hintLabel: UILabel!
+    @IBOutlet weak var contentView: AddToSiriContentView!
+    @IBOutlet weak var priorityView: AddToSiriPriorityView!
+    
+    lazy var intentContent: SiriIntentContent = {
+        return SiriIntentContent()
+    }()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.title = "Add To Siri"
+        self.view.backgroundColor = UIColor.groupTableViewBackground
+        
+        priorityView.delegate = self
+        contentView.delegate = self
+       showContentView()
+    }
+
+    func showContentView() {
+        if intentContent.priorityAlerts.count == 0 {
+            contentView.isHidden = true
+            hintLabel.isHidden = false
+        } else {
+            contentView.isHidden = false
+            hintLabel.isHidden = true
+            
+            
+            var titleStr = intentContent.priorityAlerts.map() {$0.title}.joined(separator: ", ")
+            titleStr = titleStr.replacingOccurrences(of: " Alert", with: "").appending(" Alerts")
+            contentView.title = titleStr
+        }
+    }
+
+}
+
+extension ViewController: AddToSiriPriorityViewDelegate {
+    func addToSiriPriorityView(_ view: AddToSiriPriorityView, didSelectPriority priority: AlertPriority) {
+        intentContent.priorityAlerts.append(priority)
+        
+      showContentView()
+    }
+    
+    func addToSiriPriorityView(_ view: AddToSiriPriorityView, didDeselectPriority priority: AlertPriority) {
+    
+        let firstIndex = intentContent.priorityAlerts.firstIndex(where: { ap in
+            if ap.type == priority.type {
+                return true
+            } else {
+                return false
+            }
+        })
+        
+        guard let index = firstIndex else {
+            return
+        }
+        
+        intentContent.priorityAlerts.remove(at: index)
+    
+      showContentView()
+    }
+    
+    
+}
+
+extension ViewController: AddToSiriContentViewDelegate {
+    func hideAddToSiriContentView(_ view: AddToSiriContentView) {
+        priorityView.unselectAllPriority()
+        intentContent.priorityAlerts.removeAll()
+        showContentView()
+    }
+    
+    
+}
