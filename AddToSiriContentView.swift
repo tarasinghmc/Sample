@@ -8,16 +8,20 @@
 
 import UIKit
 
+import UIKit
+
 fileprivate struct AddToSiriContentViewRow {
     enum RowType {
         case rule
         case country
         case lob
         case sublob
+        case partnerOnly
     }
     var type: RowType
     var selectedValues: [String]?
     var title: String
+    var isExpandableRow: Bool
     var isAllValuesSelected: Bool {
         didSet {
             if isAllValuesSelected == true {
@@ -26,11 +30,12 @@ fileprivate struct AddToSiriContentViewRow {
         }
     }
     var isSelected: Bool
-    init(type: RowType, title: String, isAllValuesSelected: Bool = true, isSelected: Bool = true) {
+    init(type: RowType, title: String, isExpandableRow: Bool = true, isAllValuesSelected: Bool = true, isSelected: Bool = true) {
         self.type = type
         self.title = title
         self.isAllValuesSelected = isAllValuesSelected
         self.isSelected = isSelected
+        self.isExpandableRow = isExpandableRow
     }
 }
 
@@ -147,6 +152,10 @@ protocol AddToSiriContentViewDelegate: class {
         // Country
         let countryRow = AddToSiriContentViewRow(type: .country, title: "Country")
         dataList.append(countryRow)
+        // Partner
+        let partnerOnlyRow = AddToSiriContentViewRow(type: .partnerOnly, title: "Partner Only", isExpandableRow: false)
+        
+        dataList.append(partnerOnlyRow)
         // Lob
         let lobRow = AddToSiriContentViewRow(type: .lob, title: "Lob")
         dataList.append(lobRow)
@@ -170,12 +179,21 @@ extension AddToSiriContentView: UITableViewDelegate, UITableViewDataSource {
         let data = dataList[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "AddToSiriContentTableViewCell", for: indexPath) as? AddToSiriContentTableViewCell
         cell?.titleLabel.text = data.title
-        if data.isAllValuesSelected {
-            cell?.valueLabel.text = "All"
-        } else {
-            cell?.valueLabel.text = "\(data.selectedValues?.count ?? 0) \(data.title.lowercased())"
-        }
+       
         cell?.selectImageView.backgroundColor = data.isSelected == true ? UIColor.red : UIColor.green
+        if data.isExpandableRow {
+            cell?.moreButton.isHidden = false
+            if data.isAllValuesSelected {
+                cell?.valueLabel.text = "All"
+            } else {
+                cell?.valueLabel.text = "\(data.selectedValues?.count ?? 0) \(data.title.lowercased())"
+            }
+        } else {
+            cell?.moreButton.isHidden = true
+            cell?.valueLabel.text = nil
+        }
+        
+        
         cell?.selectionStyle = .none
         return cell!
     }
