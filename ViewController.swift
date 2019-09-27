@@ -1,89 +1,89 @@
 //
 //  ViewController.swift
-//  SiriShortcutDemo
+//  TDApp
 //
-//  Created by Tara Singh M C on 24/07/19.
+//  Created by Tara Singh M C on 26/09/19.
 //  Copyright © 2019 Tara Singh. All rights reserved.
 //
 
 import UIKit
 
-struct SiriIntentContent {
-    var priorityAlerts = [AlertPriority]()
-    
-}
-
 class ViewController: UIViewController {
 
-    @IBOutlet weak var hintLabel: UILabel!
-    @IBOutlet weak var contentView: AddToSiriContentView!
-    @IBOutlet weak var priorityView: AddToSiriPriorityView!
+    @IBOutlet weak var tableview: UITableView!
     
-    lazy var intentContent: SiriIntentContent = {
-        return SiriIntentContent()
-    }()
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.title = "Add To Siri"
-        self.view.backgroundColor = UIColor.groupTableViewBackground
-        
-        priorityView.delegate = self
-        contentView.delegate = self
-       showContentView()
-    }
-
-    func showContentView() {
-        if intentContent.priorityAlerts.count == 0 {
-            contentView.isHidden = true
-            hintLabel.isHidden = false
-        } else {
-            contentView.isHidden = false
-            hintLabel.isHidden = true
-            
-            
-            var titleStr = intentContent.priorityAlerts.map() {$0.title}.joined(separator: ", ")
-            titleStr = titleStr.replacingOccurrences(of: " Alert", with: "").appending(" Alerts")
-            contentView.title = titleStr
+    var dataList = ["A", "B", "C", "D", "E"]
+    var selectedValues:[String]? {
+        didSet {
+            if self.selectedValues?.count ?? 0 == dataList.count {
+                selectOn.text = "Clear All"
+            } else {
+                selectOn.text = "Select All"
+            }
         }
     }
+    
+    let selectOn = UILabel()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableview.register(UINib(nibName: "InfoTableViewCell", bundle: nil), forCellReuseIdentifier: "InfoTableViewCell")
+       tableview.delegate = self
+       tableview.dataSource = self
+        tableview.rowHeight = UITableView.automaticDimension
+        tableview.estimatedRowHeight = UITableView.automaticDimension
+        selectedValues = dataList
+        
+        let view = UIView(frame: .zero)
+        view.addSubview(selectOn)
+        selectOn.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([selectOn.topAnchor.constraint(equalTo: view.topAnchor
+                                                                   ),selectOn.leadingAnchor.constraint(equalTo: view.leadingAnchor),selectOn.trailingAnchor.constraint(equalTo: view.trailingAnchor),selectOn.bottomAnchor.constraint(equalTo: view.bottomAnchor)])
+        let navigt = UIBarButtonItem(customView: view)
+        
+        self.navigationItem.rightBarButtonItem = navigt
+    }
+
 
 }
 
-extension ViewController: AddToSiriPriorityViewDelegate {
-    func addToSiriPriorityView(_ view: AddToSiriPriorityView, didSelectPriority priority: AlertPriority) {
-        intentContent.priorityAlerts.append(priority)
-        
-      showContentView()
+extension ViewController: UITableViewDelegate, UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dataList.count
     }
     
-    func addToSiriPriorityView(_ view: AddToSiriPriorityView, didDeselectPriority priority: AlertPriority) {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableview.dequeueReusableCell(withIdentifier: "InfoTableViewCell", for: indexPath) as! InfoTableViewCell
+        cell.titleLabel.text = dataList[indexPath.row]
+        if selectedValues?.contains(dataList[indexPath.row]) ?? false {
+            cell.accessoryType = .checkmark
+        } else {
+            cell.accessoryType = .none
+        }
+        return cell
+    }
     
-        let firstIndex = intentContent.priorityAlerts.firstIndex(where: { ap in
-            if ap.type == priority.type {
-                return true
-            } else {
-                return false
-            }
-        })
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        guard let index = firstIndex else {
+        guard var selectedValues = self.selectedValues else {
+            self.selectedValues = [dataList[indexPath.row]]
             return
         }
         
-        intentContent.priorityAlerts.remove(at: index)
-    
-      showContentView()
-    }
-    
-    
-}
+        let index = selectedValues.firstIndex(where: { value in
+            return dataList[indexPath.row] == value
+        })
+        
+        if let index = index {
+            selectedValues.remove(at: index)
+        } else {
+            selectedValues.append(dataList[indexPath.row])
+        }
+        
+        self.selectedValues = selectedValues
+        tableView.reloadData()
 
-extension ViewController: AddToSiriContentViewDelegate {
-    func hideAddToSiriContentView(_ view: AddToSiriContentView) {
-        priorityView.unselectAllPriority()
-        intentContent.priorityAlerts.removeAll()
-        showContentView()
     }
     
+ 
     
 }
